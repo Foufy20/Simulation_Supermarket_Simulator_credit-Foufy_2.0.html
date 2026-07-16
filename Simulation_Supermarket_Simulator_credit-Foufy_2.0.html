@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="fr">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+  <title>
+   Supermarket Mobile
+  </title>
+  <style>
+   :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary: #bb86fc; 
+            --secondary: #03dac6; 
+            --error: #cf6679;
+            --text: #ffffff;
+            --text-sec: #b0b0b0;
+            --nav-height: 60px;
+            --bank-green: #00897b;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: calc(var(--nav-height) + 20px);
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* --- Header Sticky --- */
+        header {
+            background: #2c2c2c;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 0.9rem;
+        }
+
+        .header-info span { display: block; font-size: 0.8em; color: var(--text-sec); }
+        .header-info strong { font-size: 1.1em; color: var(--secondary); }
+        
+        .time-badge {
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        /* --- Sections (Tabs) --- */
+        .tab-content { display: none; padding: 15px; animation: fadeIn 0.2s; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Cartes Produits --- */
+        .card {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .card h3 { margin: 0 0 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .badge-stock { background: #333; font-size: 0.8em; padding: 2px 8px; border-radius: 4px; }
+
+        .price-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2a2a2a;
+            padding: 5px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .btn-circle {
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            border: none;
+            background: #444;
+            color: white;
+            font-size: 1.2em;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-circle:active { background: var(--primary); }
+        .price-display { font-weight: bold; width: 60px; text-align: center; }
+
+        .action-row { display: flex; gap: 10px; margin-top: 10px; }
+        
+        .btn-main {
+            flex: 1;
+            background: var(--secondary);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .btn-main:active { opacity: 0.8; }
+        
+        .big-start-btn {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(187, 134, 252, 0.3);
+            font-weight: bold;
+        }
+        .big-start-btn:disabled { background: #444; color: #888; box-shadow: none; }
+
+        /* --- Logs --- */
+        .log-item { font-size: 0.85em; padding: 8px 0; border-bottom: 1px solid #333; }
+        .log-sale { color: var(--secondary); }
+        .log-fail { color: var(--error); }
+
+        /* --- Navbar --- */
+        .navbar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: var(--nav-height);
+            background: #1f1f1f;
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #333; z-index: 100;
+        }
+        .nav-item { color: var(--text-sec); text-align: center; font-size: 0.7em; padding: 10px; flex: 1; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.5em; display: block; margin-bottom: 2px; }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 200;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-box {
+            background: #252525; width: 100%; max-width: 350px;
+            padding: 25px; border-radius: 15px; text-align: center;
+            border: 1px solid var(--error);
+        }
+        .bill-line { display: flex; justify-content: space-between; margin: 10px 0; font-size: 0.9em; }
+        .total-line { font-size: 1.4em; color: var(--error); margin-top: 20px; font-weight: bold; }
+
+        /* --- BANQUE STYLE --- */
+        .loan-card {
+            background-color: var(--bank-green);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .loan-amount-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .loan-slider {
+            width: 100%;
+            margin: 15px 0;
+            accent-color: white;
+        }
+        .loan-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .btn-loan {
+            background: white;
+            color: var(--bank-green);
+            font-weight: bold;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-loan:active { opacity: 0.9; transform: scale(0.98); }
+
+    .credit { position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666; z-index: 1000; }
+  </style>
+ </head>
+ <body>
+  <header>
+   <div class="header-info">
+    <span>
+     Caisse
+    </span>
+    <strong id="display-money">
+     50.00 €
+    </strong>
+   </div>
+   <div class="header-info" style="text-align: center;">
+    <span>
+     Jour
+    </span>
+    <strong id="display-day" style="color:#ffd700">
+     1
+    </strong>
+   </div>
+   <div class="time-badge" id="display-time">
+    08:00
+   </div>
+  </header>
+  <div class="tab-content active" id="tab-store">
+   <div id="products-list">
+   </div>
+   <div style="height: 50px;">
+   </div>
+  </div>
+  <div class="tab-content" id="tab-office">
+   <button class="big-start-btn" id="btn-toggle-day" onclick="startDay()">
+    OUVRIR LE MAGASIN
+   </button>
+   <h3 style="border-bottom: 1px solid #444; padding-bottom:10px;">
+    Banque
+   </h3>
+   <div class="loan-card" id="loan-interface">
+    <h3>
+     Prêt Bancaire
+    </h3>
+    <div class="loan-amount-display" id="loan-val-display">
+     200 €
+    </div>
+    <input class="loan-slider" id="loan-slider" max="350" min="1" oninput="updateLoanUI()" type="range" value="200"/>
+    <div class="loan-details">
+     <span>
+      Remboursement:
+      <strong id="loan-repay-display">
+       220.00 €
+      </strong>
+     </span>
+     <span>
+      Délai:
+      <strong>
+       2 Jours
+      </strong>
+     </span>
+    </div>
+    <button class="btn-loan" onclick="takeLoan()">
+     PRENDRE LE PRÊT
+    </button>
+   </div>
+   <div class="loan-card" id="loan-active-status" style="display:none; background:#444;">
+    <h3>
+     Crédit en cours
+    </h3>
+    <p style="color:#aaa; font-size:0.9em;">
+     Montant à rembourser
+    </p>
+    <div class="loan-amount-display" id="active-loan-debt" style="color:var(--error)">
+     0 €
+    </div>
+    <p>
+     Échéance : Jour
+     <span id="active-loan-date" style="color:var(--secondary)">
+      0
+     </span>
+    </p>
+   </div>
+   <h3 style="border-bottom: 1px solid #444; padding-bottom:10px; margin-top:20px;">
+    Améliorations
+   </h3>
+   <div class="card">
+    <h3>
+     Agrandissement
+    </h3>
+    <p style="font-size:0.8em; color:#aaa;">
+     Plus de clients, mais factures plus élevées.
+    </p>
+    <button class="btn-main" onclick="buyUpgrade('space')" style="background:#444; color:white; border:1px solid white;">
+     Acheter (200 €)
+    </button>
+   </div>
+   <div class="card">
+    <h3>
+     Décoration Chic
+    </h3>
+    <p style="font-size:0.8em; color:#aaa;">
+     Les clients paient plus cher.
+    </p>
+    <button class="btn-main" onclick="buyUpgrade('decor')" style="background:#444; color:white; border:1px solid white;">
+     Acheter (500 €)
+    </button>
+   </div>
+   <div class="card">
+    <h3>
+     Statistiques
+    </h3>
+    <p>
+     Réputation:
+     <span id="display-rep" style="color:var(--secondary)">
+      10
+     </span>
+     /100
+    </p>
+    <p>
+     Niveau Magasin:
+     <span id="display-lvl">
+      1
+     </span>
+    </p>
+   </div>
+  </div>
+  <div class="tab-content" id="tab-logs">
+   <h3>
+    Historique (Derniers événements)
+   </h3>
+   <div id="log-area">
+   </div>
+  </div>
+  <nav class="navbar">
+   <div class="nav-item active" onclick="switchTab('store', this)">
+    <span class="nav-icon">
+     🛒
+    </span>
+    Magasin
+   </div>
+   <div class="nav-item" onclick="switchTab('office', this)">
+    <span class="nav-icon">
+     💼
+    </span>
+    Bureau
+   </div>
+   <div class="nav-item" onclick="switchTab('logs', this)">
+    <span class="nav-icon">
+     📜
+    </span>
+    Journal
+   </div>
+  </nav>
+  <div class="modal-overlay" id="modal-overlay">
+   <div class="modal-box">
+    <h2 style="color:var(--error); margin-top:0;">
+     Factures &amp; Dettes
+    </h2>
+    <div id="bill-details">
+    </div>
+    <div class="total-line" id="bill-total">
+    </div>
+    <br/>
+    <button class="btn-main" id="btn-pay" onclick="payBills()" style="background:var(--primary); color:white;">
+     PAYER
+    </button>
+    <p id="game-over-msg" style="display:none; color:red; font-weight:bold; margin-top:10px;">
+     FAILLITE !
+    </p>
+   </div>
+  </div>
+  <script>
+   // --- Configuration ---
+    const GAME_CONFIG = {
+        secondsPerMinute: 1, 
+        startHour: 8,
+        endHour: 20,
+        baseTaxRate: 0.10,
+        electricityCost: 15,
+        wifiCost: 5
+    };
+
+    let state = {
+        money: 50.00,
+        day: 1,
+        time: GAME_CONFIG.startHour * 60,
+        isDayActive: false,
+        reputation: 10,
+        storeLevel: 1,
+        decorLevel: 1,
+        bankruptcy: false,
+        activeLoan: null
+    };
+
+    let products = [
+        { id: 1, name: "Farine", cost: 1.25, stock: 10, sellPrice: 2.25, idealPrice: 2.50 },
+        { id: 2, name: "Oeufs", cost: 2.50, stock: 5, sellPrice: 4.00, idealPrice: 4.50 },
+        { id: 3, name: "Lait", cost: 1.80, stock: 5, sellPrice: 3.00, idealPrice: 3.20 },
+        { id: 4, name: "Céréales", cost: 3.50, stock: 0, sellPrice: 5.50, idealPrice: 6.00 },
+        { id: 5, name: "Café", cost: 5.00, stock: 0, sellPrice: 8.00, idealPrice: 9.00 }
+    ];
+
+    let gameInterval, customerInterval;
+
+    function init() {
+        renderProducts();
+        updateUI();
+        updateLoanUI(); 
+        log("Bienvenue Chef !", "info");
+    }
+
+    // --- Navigation Tabs ---
+    window.switchTab = function(tabName, el) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+    };
+
+    // --- Moteur Jeu ---
+    window.startDay = function() {
+        if (state.isDayActive) return;
+        state.isDayActive = true;
+        state.time = GAME_CONFIG.startHour * 60;
+        
+        document.getElementById('btn-toggle-day').disabled = true;
+        document.getElementById('btn-toggle-day').innerText = "EN COURS...";
+        document.getElementById('btn-toggle-day').style.background = "#333";
+        
+        document.querySelector('.nav-item:first-child').click();
+
+        gameInterval = setInterval(() => {
+            state.time++;
+            updateTimeUI();
+            if (state.time >= GAME_CONFIG.endHour * 60) endDay();
+        }, GAME_CONFIG.secondsPerMinute * 1000);
+
+        let spawnRate = 2000 - (state.reputation * 10) - (state.storeLevel * 100); 
+        if (spawnRate < 500) spawnRate = 500;
+
+        customerInterval = setInterval(() => {
+            if(state.isDayActive) attemptCustomerVisit();
+        }, spawnRate);
+    };
+
+    function endDay() {
+        clearInterval(gameInterval);
+        clearInterval(customerInterval);
+        state.isDayActive = false;
+        showBillModal();
+    }
+
+    function attemptCustomerVisit() {
+        if (Math.random() > 0.3) { 
+            let product = products[Math.floor(Math.random() * products.length)];
+            if (product.stock > 0) {
+                let tolerance = 1.1 + (state.decorLevel * 0.05);
+                let maxPrice = product.idealPrice * tolerance;
+
+                if (product.sellPrice <= maxPrice) {
+                    state.money += product.sellPrice;
+                    product.stock--;
+                    log(`+ ${product.sellPrice.toFixed(2)}€ (${product.name})`, "sale");
+                    if(state.reputation < 100) state.reputation += 0.1;
+                } else {
+                    log(`${product.name}: Trop cher !`, "fail");
+                    if(state.reputation > 0) state.reputation -= 0.1;
+                }
+            }
+            updateUI();
+            renderProducts(); 
+        }
+    }
+
+    // --- Factures et Remboursement Prêt ---
+    let pendingBill = 0;
+    
+    function showBillModal() {
+        let elec = GAME_CONFIG.electricityCost * state.storeLevel;
+        let wifi = GAME_CONFIG.wifiCost;
+        let taxes = state.money * GAME_CONFIG.baseTaxRate;
+        let total = elec + wifi + taxes;
+
+        let loanRepayment = 0;
+        let loanHtml = "";
+
+        if (state.activeLoan && state.day >= state.activeLoan.dueDay) {
+            loanRepayment = state.activeLoan.repayAmount;
+            loanHtml = `<div class="bill-line" style="color:#ff9800"><span>Remboursement Prêt</span><span>-${loanRepayment.toFixed(2)}€</span></div>`;
+            total += loanRepayment;
+        }
+
+        pendingBill = total;
+
+        document.getElementById('bill-details').innerHTML = `
+            <div class="bill-line"><span>Électricité</span><span>-${elec.toFixed(2)}€</span></div>
+            <div class="bill-line"><span>Wi-Fi</span><span>-${wifi.toFixed(2)}€</span></div>
+            <div class="bill-line"><span>Taxes (10%)</span><span>-${taxes.toFixed(2)}€</span></div>
+            ${loanHtml}
+        `;
+        document.getElementById('bill-total').innerText = `-${total.toFixed(2)} €`;
+
+        const modal = document.getElementById('modal-overlay');
+        const btn = document.getElementById('btn-pay');
+        const msg = document.getElementById('game-over-msg');
+        
+        modal.style.display = "flex";
+
+        if (state.money >= total) {
+            btn.disabled = false;
+            msg.style.display = "none";
+        } else {
+            btn.style.display = "none";
+            msg.style.display = "block";
+            state.bankruptcy = true;
+        }
+    }
+
+    window.payBills = function() {
+        state.money -= pendingBill;
+
+        if (state.activeLoan && state.day >= state.activeLoan.dueDay) {
+            state.activeLoan = null;
+            alert("Prêt remboursé avec succès !");
+            updateLoanUI(); 
+        }
+
+        state.day++;
+        updateUI();
+        document.getElementById('modal-overlay').style.display = "none";
+        
+        const btnStart = document.getElementById('btn-toggle-day');
+        btnStart.disabled = false;
+        btnStart.innerText = "OUVRIR LE MAGASIN";
+        btnStart.style.background = "var(--primary)";
+        
+        document.querySelector('.nav-item:nth-child(2)').click();
+    };
+
+    // --- Logique du Prêt ---
+    window.updateLoanUI = function() {
+        const slider = document.getElementById('loan-slider');
+        const displayVal = document.getElementById('loan-val-display');
+        const displayRepay = document.getElementById('loan-repay-display');
+        const loanInterface = document.getElementById('loan-interface');
+        const loanStatus = document.getElementById('loan-active-status');
+
+        if (state.activeLoan) {
+            loanInterface.style.display = 'none';
+            loanStatus.style.display = 'block';
+            document.getElementById('active-loan-debt').innerText = state.activeLoan.repayAmount.toFixed(2) + " €";
+            document.getElementById('active-loan-date').innerText = state.activeLoan.dueDay;
+        } else {
+            loanInterface.style.display = 'block';
+            loanStatus.style.display = 'none';
+            
+            let val = parseInt(slider.value);
+            displayVal.innerText = val + " €";
+            let repay = val * 1.10; 
+            displayRepay.innerText = repay.toFixed(2) + " €";
+        }
+    };
+
+    window.takeLoan = function() {
+        const slider = document.getElementById('loan-slider');
+        let amount = parseInt(slider.value);
+        let repay = amount * 1.10; 
+
+        state.money += amount;
+        state.activeLoan = {
+            amount: amount,
+            repayAmount: repay,
+            // CHANGEMENT ICI: + 2 jours
+            dueDay: state.day + 2 
+        };
+
+        log(`Prêt de ${amount}€ accordé !`, "sale");
+        updateUI();
+        updateLoanUI();
+        // CHANGEMENT ICI: Texte 2 jours
+        alert(`Vous avez reçu ${amount}€.\nAttention : Vous devez rembourser ${repay.toFixed(2)}€ au Jour ${state.day + 2} !`);
+    };
+
+    // --- Actions ---
+    window.buyStock = function(id) {
+        let p = products.find(prod => prod.id === id);
+        if (state.money >= p.cost) {
+            state.money -= p.cost;
+            p.stock++;
+            updateUI();
+            renderProducts();
+        }
+    };
+
+    window.changePrice = function(id, delta) {
+        let p = products.find(prod => prod.id === id);
+        p.sellPrice += delta;
+        if(p.sellPrice < 0) p.sellPrice = 0;
+        renderProducts();
+    };
+
+    window.buyUpgrade = function(type) {
+        if (type === 'space' && state.money >= 200) {
+            state.money -= 200;
+            state.storeLevel++;
+            alert("Magasin agrandi !");
+        } else if (type === 'decor' && state.money >= 500) {
+            state.money -= 500;
+            state.decorLevel++;
+            alert("Déco achetée !");
+        } else {
+            alert("Pas assez d'argent !");
+        }
+        updateUI();
+    };
+
+    // --- Rendering ---
+    function renderProducts() {
+        const container = document.getElementById('products-list');
+        container.innerHTML = "";
+        
+        products.forEach(p => {
+            let profit = (p.sellPrice - p.cost).toFixed(2);
+            let profitColor = profit > 0 ? "var(--secondary)" : "var(--error)";
+
+            container.innerHTML += `
+                <div class="card">
+                    <h3>
+                        ${p.name}
+                        <span class="badge-stock">Stock: ${p.stock}</span>
+                    </h3>
+                    <div style="font-size:0.8em; color:#888;">Coût: ${p.cost}€ | Marge: <span style="color:${profitColor}">${profit}€</span></div>
+                    
+                    <div class="price-control">
+                        <button class="btn-circle" onclick="changePrice(${p.id}, -0.10)">-</button>
+                        <div class="price-display">${p.sellPrice.toFixed(2)}€</div>
+                        <button class="btn-circle" onclick="changePrice(${p.id}, 0.10)">+</button>
+                    </div>
+
+                    <button class="btn-main" onclick="buyStock(${p.id})">
+                        Acheter ( -${p.cost}€ )
+                    </button>
+                </div>
+            `;
+        });
+    }
+
+    function updateUI() {
+        document.getElementById('display-money').innerText = state.money.toFixed(2) + " €";
+        document.getElementById('display-day').innerText = state.day;
+        document.getElementById('display-rep').innerText = Math.floor(state.reputation);
+        document.getElementById('display-lvl').innerText = state.storeLevel;
+        updateTimeUI();
+    }
+
+    function updateTimeUI() {
+        let hours = Math.floor(state.time / 60);
+        let minutes = state.time % 60;
+        let timeStr = (hours < 10 ? "0" : "") + hours + ":" + (minutes < 10 ? "0" : "") + minutes;
+        document.getElementById('display-time').innerText = timeStr;
+    }
+
+    function log(msg, type="") {
+        const logArea = document.getElementById('log-area');
+        let div = document.createElement('div');
+        div.className = "log-item " + (type === "sale" ? "log-sale" : (type === "fail" ? "log-fail" : ""));
+        div.innerHTML = `[${document.getElementById('display-time').innerText}] ${msg}`;
+        logArea.prepend(div);
+        if(logArea.children.length > 15) logArea.lastChild.remove();
+    }
+
+    init();
+  </script>
+  <a class="credit">
+   Crédit HTML : Foufy_2.0
+   <a>
+   </a>
+  </a>
+ </body>
+</html>
